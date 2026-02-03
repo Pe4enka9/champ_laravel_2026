@@ -2,11 +2,11 @@
 @section('title', 'Курсы')
 @section('content')
     <h1 class="mb-3">Курсы</h1>
+    <a href="{{ route('courses.create') }}" class="mb-3 btn btn-primary">Создать курс</a>
 
-    <div class="mb-3 d-flex gap-2">
-        <a href="{{ route('courses.create') }}" class="btn btn-primary">Создать курс</a>
-        <a href="{{ route('lessons.index') }}" class="btn btn-secondary">Уроки</a>
-    </div>
+    @error('course')
+    <div class="mb-3 alert alert-danger">{{ $message }}</div>
+    @enderror
 
     <table class="table table-striped">
         <thead>

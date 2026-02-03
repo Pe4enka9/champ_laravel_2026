@@ -1,7 +1,5 @@
 <?php
 
-use App\Enums\PaymentStatusEnum;
-use App\Models\Course;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -11,17 +9,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('orders', function (Blueprint $table) {
+        Schema::create('certificates', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(User::class)->constrained();
-            $table->foreignIdFor(Course::class)->constrained();
-            $table->string('payment_status')->default(PaymentStatusEnum::PENDING);
+            $table->string('certificate')->unique();
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('orders');
+        Schema::dropIfExists('certificates');
     }
 };

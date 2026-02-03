@@ -2,11 +2,7 @@
 @section('title', 'Уроки')
 @section('content')
     <h1 class="mb-3">Уроки</h1>
-
-    <div class="mb-3 d-flex gap-2">
-        <a href="{{ route('lessons.create') }}" class="btn btn-primary">Создать урок</a>
-        <a href="{{ route('courses.index') }}" class="btn btn-secondary">Курсы</a>
-    </div>
+    <a href="{{ route('lessons.create') }}" class="mb-3 btn btn-primary">Создать урок</a>
 
     <table class="table table-striped">
         <thead>

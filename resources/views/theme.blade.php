@@ -10,7 +10,15 @@
 </head>
 <body>
 
-<main class="mt-5 container">
+<header class="mb-5 py-3 container d-flex justify-content-center">
+    <nav class="d-flex gap-3">
+        <a href="{{ route('courses.index') }}" class="btn btn-primary">Курсы</a>
+        <a href="{{ route('lessons.index') }}" class="btn btn-primary">Уроки</a>
+        <a href="{{ route('students.index') }}" class="btn btn-primary">Студенты</a>
+    </nav>
+</header>
+
+<main class="container">
     @yield('content')
 </main>
 

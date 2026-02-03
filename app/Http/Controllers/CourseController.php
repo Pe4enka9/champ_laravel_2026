@@ -50,6 +50,12 @@ class CourseController extends Controller
 
         $user = $request->user();
 
+        if ($user->orders()->where('course_id', $course->id)->exists()) {
+            return response()->json([
+                'message' => 'You can\'t buy more than one lesson',
+            ], 422);
+        }
+
         $order = Order::create([
             'user_id' => $user->id,
             'course_id' => $course->id,

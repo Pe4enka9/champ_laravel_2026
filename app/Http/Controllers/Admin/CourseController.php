@@ -10,8 +10,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
-use Intervention\Image\Drivers\Gd\Driver;
-use Intervention\Image\ImageManager;
 
 class CourseController extends Controller
 {
@@ -32,7 +30,7 @@ class CourseController extends Controller
     // Создание курса
     public function store(CreateCourseRequest $request): RedirectResponse
     {
-        $imagePath = $this->resizeImage($request->file('image'));
+        $path = $this->convertImage($request->file('image'));
 
         Course::create([
             'name' => $request->name,
@@ -41,7 +39,7 @@ class CourseController extends Controller
             'price' => $request->price,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
-            'image' => $imagePath,
+            'image' => $path,
         ]);
 
         return redirect()->route('courses.index');
@@ -58,7 +56,7 @@ class CourseController extends Controller
     {
         if ($request->hasFile('image')) {
             Storage::disk('public')->delete($course->image);
-            $imagePath = $this->resizeImage($request->file('image'));
+            $path = $this->convertImage($request->file('image'));
         }
 
         $course->update([
@@ -68,7 +66,7 @@ class CourseController extends Controller
             'price' => $request->price,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
-            'image' => $imagePath ?? $course->image,
+            'image' => $path ?? $course->image,
         ]);
 
         return redirect()->route('courses.index');
@@ -77,20 +75,75 @@ class CourseController extends Controller
     // Удаление курса
     public function destroy(Course $course): RedirectResponse
     {
+        if ($course->orders()->exists()) {
+            return back()->withErrors(['course' => 'Удаление невозможно. Есть активные записи на курс.']);
+        }
+
         Storage::disk('public')->delete($course->image);
         $course->delete();
 
         return redirect()->route('courses.index');
     }
 
-    // Конвертация изображения
-    private function resizeImage(UploadedFile $image): string
+    private function convertImage(UploadedFile $image): string
     {
-        $imageName = 'mpic_' . uniqid() . '.' . $image->extension();
-        $manager = new ImageManager(new Driver());
-        $processed = $manager->read($image)->cover(300, 300)->toJpeg();
-        Storage::disk('public')->put('images/' . $imageName, $processed->toString());
+        // Получаем временный путь к загружаемому файлу
+        $tempPath = $image->getPathname();
 
-        return 'images/' . $imageName;
+        // Загружаем исходное изображение как ресурс GD
+        $src = imagecreatefromjpeg($tempPath);
+
+        // Определяем исходную ширину и высоту изображения
+        $origW = imagesx($src);
+        $origH = imagesy($src);
+
+        // Задаем максимальный размер стороны миниатюры (300 пикселей)
+        $maxSize = 300;
+
+        // Вычисляем коэффициент масштабирования так,
+        // чтобы изображение полностью поместилось в квадрат 300x300,
+        // сохранив пропорции (аналог CSS object-fit: contain)
+        $ratio = min($maxSize / $origW, $maxSize / $origH);
+
+        // Рассчитываем новые размеры с учетом пропорций
+        $newW = (int)($origW * $ratio);
+        $newH = (int)($origH * $ratio);
+
+        // Создаем новое "чистое" изображение (холст) нужного размера
+        $dst = imagecreatetruecolor($newW, $newH);
+
+        // Копируем и масштабируем исходное изображение на новый холст
+        imagecopyresampled(
+            $dst, // целевое изображение
+            $src, // исходное изображение
+            0, 0, // смещение на целевом изображении (x, y)
+            0, 0, // смещение на исходном изображении (x, y)
+            $newW, $newH, // размеры целевого изображения
+            $origW, $origH // размеры исходного изображения
+        );
+
+        // Формируем уникальное имя файла: mpic_ + уникальный ID + оригинальное расширение
+        $path = 'images/mpic_' . uniqid() . '.' . $image->extension();
+
+        // Преобразуем относительный путь (для диска 'public') в абсолютный путь файловой системы
+        $absolutePath = Storage::disk('public')->path($path);
+
+        // Получаем путь к директории, в которую будем сохранять файл
+        $directory = dirname($absolutePath);
+
+        // Если директория не существует - создаем её рекурсивно
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        // Сохраняем обработанное изображение как JPEG
+        imagejpeg($dst, $absolutePath);
+
+        // Освобождаем память, занятую GD-ресурсами (важно для предотвращения утечек)
+        imagedestroy($src);
+        imagedestroy($dst);
+
+        // Возвращаем относительный путь (например: "images/mpic_69820abc123.jpg")
+        return $path;
     }
 }

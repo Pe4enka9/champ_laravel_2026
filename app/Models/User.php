@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Collection;
@@ -15,8 +14,8 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string $password
  * @property boolean $is_admin
  *
- * @property-read Collection<Course> $courses
  * @property-read Collection<Order> $orders
+ * @property-read Collection<Certificate> $certificates
  */
 class User extends Authenticatable
 {
@@ -33,13 +32,13 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    public function courses(): BelongsToMany
-    {
-        return $this->belongsToMany(Course::class, 'orders');
-    }
-
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class, 'user_id');
+    }
+
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(Certificate::class, 'user_id');
     }
 }

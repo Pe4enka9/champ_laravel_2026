@@ -11,7 +11,9 @@ class StudentController extends Controller
     // Получение всех студентов, записанных на курсы
     public function index(): View
     {
-        $students = User::whereHas('orders')->with('courses')->get();
+        $students = User::whereHas('orders')
+            ->with('orders.course')
+            ->get();
 
         return view('students.index', ['students' => $students]);
     }
